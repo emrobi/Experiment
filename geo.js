@@ -9,34 +9,43 @@ if(args.length > 2) {
 }
 
 var connectionString = "http://localhost:9200";
+var defaultIndex = "hydro";
+
 var client = new elasticsearch.Client({
     host: connectionString,
     log: 'trace'
 });
 
+createIndex(defaultIndex, undefined, processFile);
 
-console.log("Processing file: ", filePath);
-
-var stream = fs.createReadStream(filePath, {flags: 'r', encoding: 'utf-8'});
 var buf = '';
 
-stream.on('data', function(d) {
-    buf += d.toString(); // when data is read, stash it in a string buffer
-    pump(); // then process the buffer
-});
+function processFile() { 
 
+    console.log("Processing file: ", filePath);
+
+    var stream = fs.createReadStream(filePath, {flags: 'r', encoding: 'utf-8'});
+
+    stream.on('data', function(d) {
+        buf += d.toString(); // when data is read, stash it in a string buffer
+        pump(); // then process the buffer
+    });
+}
+
+/* Got a problem with ES closing too soon. 
 stream.on('close', function() { 
     if(client) {
         client.close(); 
-        client = undefined;
+        // client = undefined;
     }
 });
 stream.on('end', function() { 
     if(client) {
         client.close(); 
-        client = undefined;
+        // client = undefined;
     }
 });
+*/
 
 function pump() {
     var pos;
@@ -89,19 +98,53 @@ function transform(obj) {
 /* obj should be a fully-formed geojson object
 */
 function persist(obj) {
-    console.log(JSON.stringify(obj));
-//            console.log(obj.properties.GNIS_NAME, obj.geometry.coordinates); // do something with the data here!
+    //console.log(JSON.stringify(obj));
+    //console.log(obj.properties.GNIS_NAME, obj.geometry.coordinates); // do something with the data here!
 
     client.index({
-        index: 'hydrography',
+        index: defaultIndex,
         type: 'feature',
         id: obj.properties.PERMANENT_IDENTIFIER,
         body: obj
-    }, function(error, response){
-        if(error) {
-            console.log(error);
-        } else {
-            console.log(response);
+    }, logResponse);  
+}
+
+function createIndex(value, errorFunc, successFunc) {
+
+    client.indices.create({
+        index: value,
+        body: {
+            mappings: {
+                feature: {
+                    properties: {
+                        geometry : {
+                            properties: {
+                                coordinates: {
+                                    type: 'geo_point'
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
-    });    
+
+    }, function(error, response) {
+        if(error) {
+            if(errorFunc) 
+                errorFunc(error);
+        }
+        else {
+            if( successFunc )
+                successFunc();
+        }
+    });
+}
+
+function logResponse(error, response) {
+    if(error) {
+        console.log("Bogus: ", error);
+    } else {
+        console.log("Success: ", response);
+    }
 }
