@@ -1,0 +1,26 @@
+{
+  "name": "Experiment",
+  "version": "1.0.0",
+  "description": "Experimental stuff",
+  "main": "geo.js",
+  "dependencies": {
+    "elasticsearch": "^3.1.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/emrobi/Experiment.git"
+  },
+  "keywords": [
+    "hydrography"
+  ],
+  "author": "Eric Robinson",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/emrobi/Experiment/issues"
+  },
+  "homepage": "https://github.com/emrobi/Experiment"
+}
