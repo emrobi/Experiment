@@ -13,7 +13,7 @@ var defaultIndex = "hydro";
 
 var client = new elasticsearch.Client({
     host: connectionString,
-    log: 'trace'
+    log: 'error'
 });
 
 createIndex(defaultIndex, undefined, processFile);
@@ -145,6 +145,6 @@ function logResponse(error, response) {
     if(error) {
         console.log("Bogus: ", error);
     } else {
-        console.log("Success: ", response);
+        // console.log("Success: ", response);
     }
 }
