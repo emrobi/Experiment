@@ -19,17 +19,21 @@ var client = new elasticsearch.Client({
 createIndex(defaultIndex, undefined, processFile);
 
 var buf = '';
+var stream = {};
 
 function processFile() { 
 
     console.log("Processing file: ", filePath);
 
-    var stream = fs.createReadStream(filePath, {flags: 'r', encoding: 'utf-8'});
+    stream = fs.createReadStream(filePath, {flags: 'r', encoding: 'utf-8'});
 
+    
     stream.on('data', function(d) {
-        buf += d.toString(); // when data is read, stash it in a string buffer
-        pump(); // then process the buffer
+        buf += d.toString();
+        stream.pause();
+        pump();
     });
+    
 }
 
 /* Got a problem with ES closing too soon. 
@@ -47,16 +51,30 @@ stream.on('end', function() {
 });
 */
 
-function pump() {
+function getData() {
     var pos;
 
-    while ((pos = buf.indexOf('\n')) >= 0) { // keep going while there's a newline somewhere in the buffer
-        if (pos === 0) { // if there's more than one newline in a row, the buffer will now start with a newline
-            buf = buf.slice(1); // discard it
-            continue; // so that the next iteration will start with data
-        }
-        processLine(buf.slice(0,pos)); // hand off the line
+
+    // Do we need data
+    if ((pos = buf.indexOf('\n')) < 0) {
+        stream.resume();
+    }
+}
+
+function pump() {
+
+    getData();
+
+    var pos;
+    if ((pos = buf.indexOf('\n')) >= 0) { // keep going while there's a newline somewhere in the buffer
+        var line = buf.slice(0, pos);
         buf = buf.slice(pos+1); // and slice the processed data off the buffer
+        try {
+            processLine(line); // hand off the line
+        } catch(err) {
+            logResponse(err);
+            setTimeout(pump, 0);
+        }
     }
 }
 
@@ -66,14 +84,10 @@ function processLine(line) { // here's where we do something with a line
     line.trim();
     if (line[line.length-1] == ',') line=line.substr(0,line.length-1); // discard CR (0x0D)
 
-    try {
-        if (line.length > 0) { // ignore empty lines
-            var obj = JSON.parse(line); // parse the JSON
-            transform(obj);
-            persist(obj);
-        }
-    } catch(error) {
-        console.log(error)
+    if (line.length > 0) { // ignore empty lines
+        var obj = JSON.parse(line); // parse the JSON
+        transform(obj);
+        persist(obj);
     }
 }
 
@@ -106,40 +120,62 @@ function persist(obj) {
         type: 'feature',
         id: obj.properties.PERMANENT_IDENTIFIER,
         body: obj
-    }, logResponse);  
+    }, function (error, response){
+        logResponse(error, response);
+        setTimeout(pump, 0);
+    });  
 }
 
 function createIndex(value, errorFunc, successFunc) {
 
-    client.indices.create({
-        index: value,
-        body: {
-            mappings: {
-                feature: {
-                    properties: {
-                        geometry : {
-                            properties: {
-                                coordinates: {
-                                    type: 'geo_point'
+    // Only create an index if the current one doesn't exists.
+    client.indices.exists({
+        index: value
+    }, function (error, response) {
+        if(error) {
+            if(errorFunc) {
+                errorFunc(error);
+            }
+        }
+
+        // check repsonse
+        if( response === true) {
+            successFunc();
+            return;
+        }
+
+        client.indices.create({
+            index: value,
+            body: {
+                mappings: {
+                    feature: {
+                        properties: {
+                            geometry : {
+                                properties: {
+                                    coordinates: {
+                                        type: 'geo_point'
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-        }
 
-    }, function(error, response) {
-        if(error) {
-            if(errorFunc) 
-                errorFunc(error);
-        }
-        else {
-            if( successFunc )
-                successFunc();
-        }
-    });
+        }, function(error, response) {
+            if(error) {
+                if(errorFunc) 
+                    errorFunc(error);
+            }
+            else {
+                if( successFunc )
+                    successFunc();
+            }
+        });
+    });   
 }
+
+ 
 
 function logResponse(error, response) {
     if(error) {
