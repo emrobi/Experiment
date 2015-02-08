@@ -13,7 +13,9 @@ var defaultIndex = "hydro";
 
 var client = new elasticsearch.Client({
     host: connectionString,
-    log: 'error'
+    log: 'error',
+    sniffOnStart: true,
+    sniffOnConnectionFault: true
 });
 
 createIndex(defaultIndex, undefined, processFile);
@@ -51,31 +53,27 @@ stream.on('end', function() {
 });
 */
 
-function getData() {
-    var pos;
-
-
-    // Do we need data
-    if ((pos = buf.indexOf('\n')) < 0) {
-        stream.resume();
-    }
-}
 
 function pump() {
 
-    getData();
-
     var pos;
-    if ((pos = buf.indexOf('\n')) >= 0) { // keep going while there's a newline somewhere in the buffer
+    var arr = [];
+
+    while ((pos = buf.indexOf('\n')) >= 0) { // keep going while there's a newline somewhere in the buffer
+        if( pos === 0 ) {
+            buf = buf.slice(1);
+            continue;
+        }
         var line = buf.slice(0, pos);
         buf = buf.slice(pos+1); // and slice the processed data off the buffer
         try {
-            processLine(line); // hand off the line
+            arr.push(processLine(line));
         } catch(err) {
             logResponse(err);
-            setTimeout(pump, 0);
         }
     }
+
+    persist(arr);
 }
 
 function processLine(line) { // here's where we do something with a line
@@ -87,7 +85,7 @@ function processLine(line) { // here's where we do something with a line
     if (line.length > 0) { // ignore empty lines
         var obj = JSON.parse(line); // parse the JSON
         transform(obj);
-        persist(obj);
+        return obj;
     }
 }
 
@@ -111,19 +109,31 @@ function transform(obj) {
 
 /* obj should be a fully-formed geojson object
 */
-function persist(obj) {
+function persist(arr) {
     //console.log(JSON.stringify(obj));
     //console.log(obj.properties.GNIS_NAME, obj.geometry.coordinates); // do something with the data here!
 
-    client.index({
-        index: defaultIndex,
-        type: 'feature',
-        id: obj.properties.PERMANENT_IDENTIFIER,
-        body: obj
-    }, function (error, response){
-        logResponse(error, response);
-        setTimeout(pump, 0);
-    });  
+    var count = arr.length;
+    if(count === 0) {
+        stream.resume();
+        return;
+    }
+
+    for (var i = 0; i < arr.length; i++) {
+        var obj = arr[i];
+        client.index({
+            index: defaultIndex,
+            type: 'feature',
+            id: obj.properties.PERMANENT_IDENTIFIER,
+            body: obj
+        }, function (error, response) {
+            logResponse(error, response);
+            if(--count <= 0) {
+                stream.resume();
+            }
+        });  
+        
+    };
 }
 
 function createIndex(value, errorFunc, successFunc) {
