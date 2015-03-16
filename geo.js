@@ -8,7 +8,7 @@ if(args.length > 2) {
     filePath = args[2]; // File to process. 
 }
 
-var connectionString = "http://localhost:9200";
+var connectionString = "http://server2:9200";
 var defaultIndex = "hydro3";
 
 var client = new elasticsearch.Client({
@@ -177,10 +177,12 @@ function createIndex(value, errorFunc, successFunc) {
                                 }
                             },
                             properties: {
-                                GNIS_NAME: {
-                                    type: 'string',
-                                    copy_to: 'name'
+                                properties: { 
+                                    GNIS_NAME: {
+                                        type: 'string',
+                                        copy_to: 'name'
 
+                                    }
                                 }
                             }
 
