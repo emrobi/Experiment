@@ -9,7 +9,7 @@ if(args.length > 2) {
 }
 
 var connectionString = "http://localhost:9200";
-var defaultIndex = "hydro";
+var defaultIndex = "hydro3";
 
 var client = new elasticsearch.Client({
     host: connectionString,
@@ -93,7 +93,6 @@ function processLine(line) { // here's where we do something with a line
 function transform(obj) {
     var geo = obj.geometry;
     
-    
     if( geo.type === "MultiLineString") {
         // Convert [[[lon,lat]...]] tp [[lon,lat]...]
         if(geo.hasOwnProperty('coordinates')) {
@@ -160,13 +159,31 @@ function createIndex(value, errorFunc, successFunc) {
                 mappings: {
                     feature: {
                         properties: {
+                            name: {
+                                type: 'string',
+                                index: 'not_analyzed'
+                            },
                             geometry : {
                                 properties: {
                                     coordinates: {
-                                        type: 'geo_point'
+                                        type: 'geo_point',
+                                        geohash: 'true',
+                                        lat_lon: 'true',
+                                        fielddata: {
+                                            format: 'compressed',
+                                            precision: '3m'
+                                        }
                                     }
                                 }
+                            },
+                            properties: {
+                                GNIS_NAME: {
+                                    type: 'string',
+                                    copy_to: 'name'
+
+                                }
                             }
+
                         }
                     }
                 }
