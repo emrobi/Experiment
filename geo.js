@@ -8,7 +8,7 @@ if(args.length > 2) {
     filePath = args[2]; // File to process. 
 }
 
-var connectionString = "http://server2:9200";
+var connectionString = "http://localhost:9200";
 var defaultIndex = "hydro3";
 
 var client = new elasticsearch.Client({
