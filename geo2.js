@@ -34,10 +34,7 @@ var bulkExec = function(bulkCmds, callback) {
 var ws = new WritableBulk(bulkExec);
 var toBulk = new TransformToBulk(transform);
 
-
-// createIndex(defaultIndex, undefined, processFile);
-
-processFile();
+createIndex(defaultIndex, undefined, processFile);
 
 function processFile() { 
 
