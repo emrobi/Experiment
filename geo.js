@@ -8,8 +8,8 @@ if(args.length > 2) {
     filePath = args[2]; // File to process. 
 }
 
-var connectionString = "http://localhost:9200";
-var defaultIndex = "hydro3";
+var connectionString = "http://server1:9200";
+var defaultIndex = "hydro4";
 
 var client = new elasticsearch.Client({
     host: connectionString,
@@ -123,7 +123,7 @@ function persist(arr) {
         client.index({
             index: defaultIndex,
             type: 'feature',
-            id: obj.properties.PERMANENT_IDENTIFIER,
+            // id: obj.properties.PERMANENT_IDENTIFIER,
             body: obj
         }, function (error, response) {
             logResponse(error, response);
@@ -181,6 +181,11 @@ function createIndex(value, errorFunc, successFunc) {
                                     GNIS_NAME: {
                                         type: 'string',
                                         copy_to: 'name'
+
+                                    },
+                                    PERMANENT_IDENTIFIER: {
+                                        type: 'string',
+                                        index: 'not_analyzed'
 
                                     }
                                 }
