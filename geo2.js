@@ -13,8 +13,8 @@ if(args.length > 2) {
     filePath = args[2]; // File to process. 
 }
 
-var connectionString = "http://localhost:9200";
-var defaultIndex = "hydro_test";
+var connectionString = "http://server2:9200";
+var defaultIndex = "hydro5";
 
 var client = new elasticsearch.Client({
     host: connectionString,
@@ -56,18 +56,21 @@ function done() {
 function transform(obj) {
     var geo = obj.geometry;
     
-    if( geo.type === "MultiLineString") {
+    geo.type = geo.type.toLowerCase();
+    //if( geo.type === "MultiLineString") {
+        //geo.type = "multilinestring";
         // Convert [[[lon,lat]...]] tp [[lon,lat]...]
-        if(geo.hasOwnProperty('coordinates')) {
-            geo.coordinates = geo.coordinates[0];
-            geo.coordinates = geo.coordinates.map (function(c) {
-                if(c.length > 2)
-                    c = c.slice(0,2);
-                return c;
-            });
-        }
-    }
+        //if(geo.hasOwnProperty('coordinates')) {
+            // geo.coordinates = geo.coordinates[0];
+            //geo.coordinates = geo.coordinates.map (function(c) {
+            //    if(c.length > 2)
+            //        c = c.slice(0,2);
+            //    return c;
+            //});
+        //}
+    //}
 
+    // console.log(obj);
     return obj;
 }
 
@@ -100,17 +103,8 @@ function createIndex(value, errorFunc, successFunc) {
                                 index: 'not_analyzed'
                             },
                             geometry : {
-                                properties: {
-                                    coordinates: {
-                                        type: 'geo_point',
-                                        geohash: 'true',
-                                        lat_lon: 'true',
-                                        fielddata: {
-                                            format: 'compressed',
-                                            precision: '3m'
-                                        }
-                                    }
-                                }
+                                type: 'geo_shape',
+                                precision: '3m'
                             },
                             properties: {
                                 properties: { 

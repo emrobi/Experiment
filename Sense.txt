@@ -1,0 +1,210 @@
+Sense.txt
+
+// Searchs used when using geo_point
+
+GET _search
+{}
+
+POST _search?search_type=count&size=50
+{
+   "query": {
+      "filtered": {
+         "query": { "match_all": {}},
+         "filter": {
+             "exists" : { "field" : "name" } 
+         }
+      }
+   },
+   "aggregations" : {
+        "idents" : {
+            "terms" : { "field" : "PERMANENT_IDENTIFIER" },
+            "aggs" : {
+                "names" : {
+                "terms": { "field": "name" }
+            }
+            }
+        }
+    }
+}
+
+
+POST _search?search_type=count
+{
+   "query": {
+      "match": {
+         "PERMANENT_IDENTIFIER": "165538096"
+      }
+   }
+   ,
+   "aggs" : {
+        "names" : {
+            "terms" : { "field" : "name"    }
+        }
+    }
+}
+    
+DELETE / 
+
+POST _search
+{ 
+    "query" : { 
+        "term" : { 
+            "name" : "Methow River"
+        }
+    },
+    "_source" : ["geometry"]
+}
+
+
+POST _search
+{
+  "query": {
+     "match_all": {}
+  },
+  "filter": {
+      "geo_distance": {
+           "distance": "2km",
+           "distance_type": "plane", 
+           "geometry.coordinates" : [-121.33, 47.514 ]
+      }
+  },
+  "fields": [
+    "properties.GNIS_NAME"
+  ]
+
+}
+POST _search
+{
+  "query": {
+     "match_all": {}
+  },
+  "filter": {
+      "geo_distance_range": {
+           "lt": "2km",
+           "distance_type": "plane", 
+           "geometry.coordinates" : [-122.33, 48.514 ]
+      }
+  },
+  "fields": [
+    "properties.GNIS_NAME"
+  ]
+
+}
+POST _search?search_type=count
+{
+ "query": {
+    "filtered": {
+      "filter": {
+        "bool": {
+          "must": [
+            {
+              "geo_bounding_box": {
+                "type": "indexed",
+                "_cache": true, 
+                "geometry.coordinates": {
+                  "top_left": {
+                    "lat":  48.5013,
+                    "lon": -119.4213
+                  },
+                  "bottom_right": {
+                    "lat":  48.0640,
+                    "lon": -118.8280
+                  }
+                }
+              }
+            },
+            {
+              "geo_distance": { 
+                "distance": "10km",
+                "distance_type": "plane", 
+                "geometry.coordinates": {
+                  "lat":  48.3592,
+                  "lon": -119.1281
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+   "aggs" : {
+        "names" : {
+            "terms" : { "field" : "name"    }
+        }
+    }
+}
+
+POST _search?search_type=count
+{
+ "query": {
+    "filtered": {
+      "filter": {
+        "bool": {
+          "must": [
+            {
+              "geo_bounding_box": {
+                "type": "indexed",
+                "_cache": true, 
+                "geometry.coordinates": {
+                  "top_left": {
+                    "lat":  48.5013,
+                    "lon": -119.4213
+                  },
+                  "bottom_right": {
+                    "lat":  48.0640,
+                    "lon": -118.8280
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+   "aggs" : {
+        "names" : {
+            "terms" : { "field" : "name"    }
+        }
+    }
+}
+POST _search?search_type=count
+{
+    "query": { "query_string": {
+       "query": "columbia"
+    } },
+    
+   "aggs" : {
+        "names" : {
+            "terms" : { "field" : "name"    }
+        }
+    }
+    
+}
+
+POST _search?search_type=count
+{
+   "query": {
+      "filtered": {
+         "query": {
+            "match_all": {}
+         },
+         "filter": {
+            "geo_distance": {
+               "distance": "20km",
+               "distance_type": "plane", 
+               "geometry.coordinates": {
+                  "lat": 49.911,
+                  "lon": -118.211
+               }
+            }
+         }
+      }
+   },
+   "aggs" : {
+        "names" : {
+            "terms" : { "field" : "properties.GNIS_NAME"    }
+        }
+    }
+}
