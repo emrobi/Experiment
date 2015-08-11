@@ -13,8 +13,8 @@ if(args.length > 2) {
     filePath = args[2]; // File to process. 
 }
 
-var connectionString = "http://server2:9200";
-var defaultIndex = "hydro5";
+var connectionString = "http://localhost:9200";
+var defaultIndex = "hydro5_lakes";
 
 var client = new elasticsearch.Client({
     host: connectionString,
@@ -83,6 +83,7 @@ function createIndex(value, errorFunc, successFunc) {
         if(error) {
             if(errorFunc) {
                 errorFunc(error);
+                return;
             }
         }
 
@@ -131,10 +132,8 @@ function createIndex(value, errorFunc, successFunc) {
                 if(errorFunc) 
                     errorFunc(error);
             }
-            else {
-                if( successFunc )
-                    successFunc();
-            }
+            if( successFunc )
+                successFunc();
         });
     });   
 }
