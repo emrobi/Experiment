@@ -1,11 +1,11 @@
 var fs = require("fs");
 var elasticsearch = require("elasticsearch");
 
-var filePath = "/Users/eric/dev/Experiment/data/hydro_waterbody.geojson";
+var filePath = "/home/eric/Downloads/hydro.geojson";
 var args = process.argv;
 
 if(args.length > 2) {
-    filePath = args[2]; // File to process. 
+    filePath = args[2]; // File to process.
 }
 
 var connectionString = "server2:9200";
@@ -24,31 +24,31 @@ var stream = {};
 
 createIndex(defaultIndex, undefined, processFile);
 
-function processFile() { 
+function processFile() {
 
     console.log("Processing file: ", filePath);
 
     stream = fs.createReadStream(filePath, {flags: 'r', encoding: 'utf-8'});
 
-    
+
     stream.on('data', function(d) {
         buf += d.toString();
         stream.pause();
         pump();
     });
-    
+
 }
 
-/* Got a problem with ES closing too soon. 
-stream.on('close', function() { 
+/* Got a problem with ES closing too soon.
+stream.on('close', function() {
     if(client) {
-        client.close(); 
+        client.close();
         // client = undefined;
     }
 });
-stream.on('end', function() { 
+stream.on('end', function() {
     if(client) {
-        client.close(); 
+        client.close();
         // client = undefined;
     }
 });
@@ -100,7 +100,7 @@ function processLine(line) { // here's where we do something with a line
 /// Need to clean up the geometry before putting it into ElasticSearch
 function transform(obj) {
     var geo = obj.geometry;
-    
+
     geo.type = geo.type.toLowerCase();
     //if( geo.type === "MultiLineString") {
         //geo.type = "multilinestring";
@@ -143,8 +143,8 @@ function persist(arr) {
             if(--count <= 0) {
                 stream.resume();
             }
-        });  
-        
+        });
+
     };
 }
 
@@ -164,7 +164,7 @@ function createIndex(value, errorFunc, successFunc) {
         else if( response === true) {
             successFunc();
         }
-        else {    
+        else {
             client.indices.create({
                 index: value,
                 body: {
@@ -180,18 +180,121 @@ function createIndex(value, errorFunc, successFunc) {
                                     precision: '3m'
                                 },
                                 properties: {
-                                    properties: { 
-                                        GNIS_NAME: {
-                                            type: 'string',
-                                            copy_to: 'name'
-
-                                        },
-                                        PERMANENT_IDENTIFIER: {
-                                            type: 'string',
-                                            index: 'not_analyzed'
-
-                                        }
-                                    }
+                                    properties: {
+                                      "FTYPE": {
+                                        "type": "long"
+                                      },
+                                      "NHD_FLOW": {
+                                        "type": "string"
+                                      },
+                                      "SHAPE_Length": {
+                                        "type": "double"
+                                      },
+                                      "FTR_SOURCE_DT": {
+                                        "format": "epoch_millis||yyyy/MM/dd HH:mm:ss||yyyy/MM/dd",
+                                        "type": "date"
+                                      },
+                                      "JURIS_NAME": {
+                                        "type": "string"
+                                      },
+                                      "GNIS_NAME": {
+                                        "copy_to": [
+                                          "name"
+                                        ],
+                                        "type": "string"
+                                      },
+                                      "FCODE": {
+                                        "type": "long"
+                                      },
+                                      "FTR_SOURCE": {
+                                        "type": "string"
+                                      },
+                                      "PFC": {
+                                        "type": "string"
+                                      },
+                                      "PFC_AREA_NO": {
+                                        "type": "string"
+                                      },
+                                      "PLANFLOW": {
+                                        "type": "string"
+                                      },
+                                      "PROPERTY_STATUS": {
+                                        "type": "string"
+                                      },
+                                      "PUB_DATE": {
+                                        "format": "epoch_millis||yyyy/MM/dd HH:mm:ss||yyyy/MM/dd",
+                                        "type": "date"
+                                      },
+                                      "NHD_FLOW_METADATA": {
+                                        "type": "string"
+                                      },
+                                      "STREAMORDER": {
+                                        "type": "string"
+                                      },
+                                      "LOCAL_NAME": {
+                                        "type": "string"
+                                      },
+                                      "FTR_ORGANIZATION": {
+                                        "type": "string"
+                                      },
+                                      "PFC_DATE": {
+                                        "format": "epoch_millis||yyyy/MM/dd HH:mm:ss||yyyy/MM/dd",
+                                        "type": "date"
+                                      },
+                                      "DIST_RCH_DT": {
+                                        "format": "epoch_millis||yyyy/MM/dd HH:mm:ss||yyyy/MM/dd",
+                                        "type": "date"
+                                      },
+                                      "FISHBEARING": {
+                                        "type": "string"
+                                      },
+                                      "ELEVATION": {
+                                        "type": "double"
+                                      },
+                                      "GNIS_ID": {
+                                        "type": "string"
+                                      },
+                                      "SUBBASIN": {
+                                        "type": "string"
+                                      },
+                                      "FTR_INTERPRETATION": {
+                                        "type": "string"
+                                      },
+                                      "SHAPE_Area": {
+                                        "type": "long"
+                                      },
+                                      "WBAREA_PERMANENT_IDENTIFIER": {
+                                        "type": "string"
+                                      },
+                                      "DIST_RCH_NO": {
+                                        "type": "string"
+                                      },
+                                      "TMEASURE": {
+                                        "type": "double"
+                                      },
+                                      "CONTINUITY": {
+                                        "type": "string"
+                                      },
+                                      "FMEASURE": {
+                                        "type": "double"
+                                      },
+                                      "PFC_RCH_NO": {
+                                        "type": "string"
+                                      },
+                                      "FLD_VER_DT": {
+                                        "format": "epoch_millis||yyyy/MM/dd HH:mm:ss||yyyy/MM/dd",
+                                        "type": "date"
+                                      },
+                                      "FTR_SOURCESCALE": {
+                                        "type": "long"
+                                      },
+                                      "PERMANENT_IDENTIFIER": {
+                                        "index": "not_analyzed",
+                                        "type": "string"
+                                      },
+                                      "REACHCODE": {
+                                        "type": "string"
+                                      }                                    }
                                 }
 
                             }
@@ -201,17 +304,17 @@ function createIndex(value, errorFunc, successFunc) {
 
             }, function(error, response) {
                 if(error) {
-                    if(errorFunc) 
+                    if(errorFunc)
                         errorFunc(error);
                 }
                 if( successFunc )
                     successFunc();
             });
         }
-    });  
+    });
 }
 
- 
+
 
 function logResponse(error, response) {
     if(error) {
