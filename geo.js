@@ -1,27 +1,28 @@
 var fs = require("fs");
 var elasticsearch = require("elasticsearch");
 
-var filePath = "/home/ubuntu/workspace/data/methow.geojson";
+var filePath = "/Users/eric/dev/Experiment/data/hydro_waterbody.geojson";
 var args = process.argv;
 
 if(args.length > 2) {
     filePath = args[2]; // File to process. 
 }
 
-var connectionString = "http://localhost:9200";
-var defaultIndex = "hydro5";
+var connectionString = "server2:9200";
+var defaultIndex = "hydro6";
 
 var client = new elasticsearch.Client({
+    apiVersion: '2.1',
     host: connectionString,
     log: 'error',
     sniffOnStart: true,
     sniffOnConnectionFault: true
 });
 
-createIndex(defaultIndex, undefined, processFile);
-
 var buf = '';
 var stream = {};
+
+createIndex(defaultIndex, undefined, processFile);
 
 function processFile() { 
 
@@ -67,7 +68,10 @@ function pump() {
         var line = buf.slice(0, pos);
         buf = buf.slice(pos+1); // and slice the processed data off the buffer
         try {
-            arr.push(processLine(line));
+            var obj = processLine(line);
+            if( obj ) {
+                arr.push(processLine(line));
+            }
         } catch(err) {
             logResponse(err);
         }
@@ -84,8 +88,12 @@ function processLine(line) { // here's where we do something with a line
 
     if (line.length > 0) { // ignore empty lines
         var obj = JSON.parse(line); // parse the JSON
-        transform(obj);
-        return obj;
+        if (obj.properties.GNIS_NAME ) {
+            transform(obj);
+            return obj;
+        }
+        // console.log("Dropped obj");
+        return null;
     }
 }
 
@@ -149,59 +157,58 @@ function createIndex(value, errorFunc, successFunc) {
         if(error) {
             if(errorFunc) {
                 errorFunc(error);
-                return;
             }
         }
 
         // check repsonse
-        if( response === true) {
+        else if( response === true) {
             successFunc();
-            return;
         }
-
-        client.indices.create({
-            index: value,
-            body: {
-                mappings: {
-                    feature: {
-                        properties: {
-                            name: {
-                                type: 'string',
-                                index: 'not_analyzed'
-                            },
-                            geometry : {
-                                type: 'geo_shape',
-                                precision: '3m'
-                            },
+        else {    
+            client.indices.create({
+                index: value,
+                body: {
+                    mappings: {
+                        feature: {
                             properties: {
-                                properties: { 
-                                    GNIS_NAME: {
-                                        type: 'string',
-                                        copy_to: 'name'
+                                name: {
+                                    type: 'string',
+                                    index: 'not_analyzed'
+                                },
+                                geometry : {
+                                    type: 'geo_shape',
+                                    precision: '3m'
+                                },
+                                properties: {
+                                    properties: { 
+                                        GNIS_NAME: {
+                                            type: 'string',
+                                            copy_to: 'name'
 
-                                    },
-                                    PERMANENT_IDENTIFIER: {
-                                        type: 'string',
-                                        index: 'not_analyzed'
+                                        },
+                                        PERMANENT_IDENTIFIER: {
+                                            type: 'string',
+                                            index: 'not_analyzed'
 
+                                        }
                                     }
                                 }
-                            }
 
+                            }
                         }
                     }
                 }
-            }
 
-        }, function(error, response) {
-            if(error) {
-                if(errorFunc) 
-                    errorFunc(error);
-            }
-            if( successFunc )
-                successFunc();
-        });
-    });   
+            }, function(error, response) {
+                if(error) {
+                    if(errorFunc) 
+                        errorFunc(error);
+                }
+                if( successFunc )
+                    successFunc();
+            });
+        }
+    });  
 }
 
  
