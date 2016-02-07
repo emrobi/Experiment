@@ -1,15 +1,15 @@
 var fs = require("fs");
 var elasticsearch = require("elasticsearch");
 
-var filePath = "/home/ubuntu/workspace/data/methow.geojson";
+var filePath = "/Volumes/Data/Users/Eric/dev/Experiment/hyd_test_10k.geojson";
 var args = process.argv;
 
 if(args.length > 2) {
     filePath = args[2]; // File to process. 
 }
 
-var connectionString = "http://localhost:9200";
-var defaultIndex = "hydro5";
+var connectionString = "server2:9200";
+var defaultIndex = "hydro6";
 
 var client = new elasticsearch.Client({
     host: connectionString,
@@ -125,17 +125,19 @@ function persist(arr) {
 
     for (var i = 0; i < arr.length; i++) {
         var obj = arr[i];
-        client.index({
-            index: defaultIndex,
-            type: 'feature',
-            // id: obj.properties.PERMANENT_IDENTIFIER,
-            body: obj
-        }, function (error, response) {
-            logResponse(error, response);
-            if(--count <= 0) {
-                stream.resume();
-            }
-        });  
+        if( obj.properties.GNIS_NAME != null) {
+            client.index({
+                index: defaultIndex,
+                type: 'feature',
+                // id: obj.properties.PERMANENT_IDENTIFIER,
+                body: obj
+            }, function (error, response) {
+                logResponse(error, response);
+                if(--count <= 0) {
+                    stream.resume();
+                }
+            });
+        }  
         
     };
 }
