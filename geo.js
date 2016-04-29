@@ -70,7 +70,7 @@ function pump() {
         try {
             var obj = processLine(line);
             if( obj ) {
-                arr.push(processLine(line));
+                arr.push(obj);
             }
         } catch(err) {
             logResponse(err);
@@ -144,7 +144,6 @@ function persist(arr) {
                 stream.resume();
             }
         });
-
     };
 }
 
