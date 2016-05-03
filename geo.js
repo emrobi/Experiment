@@ -1,15 +1,17 @@
 var fs = require("fs");
 var elasticsearch = require("elasticsearch");
+var path = require("path");
 
-var filePath = "/home/eric/Downloads/hydro.geojson";
+var dataPath = "/Users/eric/dev/data/reachcode"
+var filePath = "/Users/eric/dev/data/hydro_waterbody.geojson";
 var args = process.argv;
 
 if(args.length > 2) {
     filePath = args[2]; // File to process.
 }
 
-var connectionString = "server2:9200";
-var defaultIndex = "hydro6";
+var connectionString = "ubuntu:9200";
+var defaultIndex = "hydro7";
 
 var client = new elasticsearch.Client({
     apiVersion: '2.1',
@@ -70,7 +72,7 @@ function pump() {
         try {
             var obj = processLine(line);
             if( obj ) {
-                arr.push(processLine(line));
+                arr.push(obj);
             }
         } catch(err) {
             logResponse(err);
@@ -133,10 +135,10 @@ function persist(arr) {
 
     for (var i = 0; i < arr.length; i++) {
         var obj = arr[i];
-        client.index({
+/*        client.index({
             index: defaultIndex,
             type: 'feature',
-            // id: obj.properties.PERMANENT_IDENTIFIER,
+            id: obj.properties.GNIS_ID + "_" + obj.properties.PERMANENT_IDENTIFIER,
             body: obj
         }, function (error, response) {
             logResponse(error, response);
@@ -144,6 +146,20 @@ function persist(arr) {
                 stream.resume();
             }
         });
+*/
+        var buf = JSON.stringify(obj);
+
+        var fn = path.join(dataPath, obj.properties.GNIS_NAME + "_" + obj.properties.REACHCODE + ".geojson");
+        if( fs.existsSync(fn)) {
+          console.log("File exists: " + fn);
+        }
+        var fd = fs.openSync(fn, 'w');
+        fs.writeSync(fd, buf);
+        fs.closeSync(fd);
+        if(--count <= 0) {
+          stream.resume();
+        }
+
 
     };
 }
