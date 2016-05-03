@@ -159,8 +159,6 @@ function persist(arr) {
         if(--count <= 0) {
           stream.resume();
         }
-
-
     };
 }
 
