@@ -3,7 +3,7 @@ var elasticsearch = require("elasticsearch");
 var path = require("path");
 
 var dataPath = "/Users/eric/dev/data/reachcode"
-var filePath = "/Users/eric/dev/data/hydro_waterbody.geojson";
+var filePath = "/Users/eric/dev/data/NHDWaterbody.geojson";
 var args = process.argv;
 
 if(args.length > 2) {
@@ -117,6 +117,12 @@ function transform(obj) {
         //}
     //}
 
+    // Remap PERMANENT_IDENTIFIER if necessary
+    if( !(obj.properties.PERMANENT_IDENTIFIER) && obj.properties.PERMANENT_ != null) {
+      obj.properties.PERMANENT_IDENTIFIER = obj.properties.PERMANENT_ ;
+      delete obj.properties.PERMANENT_;
+    }
+
     // console.log(obj);
     return obj;
 }
@@ -149,7 +155,7 @@ function persist(arr) {
 */
         var buf = JSON.stringify(obj);
 
-        var fn = path.join(dataPath, obj.properties.GNIS_NAME + "_" + obj.properties.REACHCODE + ".geojson");
+        var fn = path.join(dataPath, obj.properties.GNIS_NAME + "_" + obj.properties.PERMANENT_IDENTIFIER + "_" + obj.properties.REACHCODE + ".geojson");
         if( fs.existsSync(fn)) {
           console.log("File exists: " + fn);
         }
