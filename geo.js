@@ -3,28 +3,27 @@ var elasticsearch = require("elasticsearch");
 var path = require("path");
 
 var dataPath = "/Users/eric/dev/data/reachcode"
-var filePath = "/Users/eric/dev/data/NHDWaterbody.geojson";
+var filePath = "/Users/eric/dev/data/bogus.geojson";
 var args = process.argv;
 
 if(args.length > 2) {
     filePath = args[2]; // File to process.
 }
 
-var connectionString = "ubuntu:9200";
-var defaultIndex = "hydro7";
+var connectionString = "https://admin:hparn3txusg8lrhgjw@ccc92aaee8b2549fc9c6871eb91a0220.us-west-1.aws.found.io:9243/";
+var defaultIndex = "hydro";
 
+console.log("Creating client");
 var client = new elasticsearch.Client({
-    apiVersion: '2.1',
-    host: connectionString,
-    log: 'error',
-    sniffOnStart: true,
-    sniffOnConnectionFault: true
+    apiVersion: '2.2',
+    host: connectionString
 });
+console.log("Client created: " + client);
 
 var buf = '';
 var stream = {};
 
-createIndex(defaultIndex, undefined, processFile);
+createIndex(defaultIndex, console.log, null);
 
 function processFile() {
 
@@ -340,6 +339,6 @@ function logResponse(error, response) {
     if(error) {
         console.log("Bogus: ", error);
     } else {
-        // console.log("Success: ", response);
+        console.log("Success: ", response);
     }
 }
