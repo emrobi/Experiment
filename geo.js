@@ -2,29 +2,38 @@ var fs = require("fs");
 var elasticsearch = require("elasticsearch");
 var path = require("path");
 
-var dataPath = "/Users/eric/dev/data/reachcode"
-var filePath = "/Users/eric/dev/data/NHDWaterbody.geojson";
+var dataPath = "/home/eric/git/hydro/waterbody"
+var filePath = "/home/eric/git/hydro/hydro_waterbody.geojson";
 var args = process.argv;
+
+var toDisk = true;
 
 if(args.length > 2) {
     filePath = args[2]; // File to process.
 }
 
-var connectionString = "ubuntu:9200";
+var connectionString = "localhost:9200";
 var defaultIndex = "hydro7";
 
-var client = new elasticsearch.Client({
-    apiVersion: '2.1',
-    host: connectionString,
-    log: 'error',
-    sniffOnStart: true,
-    sniffOnConnectionFault: true
-});
+if( ! toDisk ) {
+  var client = new elasticsearch.Client({
+      apiVersion: '2.1',
+      host: connectionString,
+      log: 'error',
+      sniffOnStart: true,
+      sniffOnConnectionFault: true
+  });
+}
 
 var buf = '';
 var stream = {};
 
-createIndex(defaultIndex, undefined, processFile);
+if( toDisk ) {
+  processFile()
+} else {
+ createIndex(defaultIndex, undefined, processFile);
+}
+
 
 function processFile() {
 
@@ -141,29 +150,36 @@ function persist(arr) {
 
     for (var i = 0; i < arr.length; i++) {
         var obj = arr[i];
-/*        client.index({
-            index: defaultIndex,
-            type: 'feature',
-            id: obj.properties.GNIS_ID + "_" + obj.properties.PERMANENT_IDENTIFIER,
-            body: obj
-        }, function (error, response) {
-            logResponse(error, response);
-            if(--count <= 0) {
-                stream.resume();
-            }
-        });
-*/
-        var buf = JSON.stringify(obj);
 
-        var fn = path.join(dataPath, obj.properties.GNIS_NAME + "_" + obj.properties.PERMANENT_IDENTIFIER + "_" + obj.properties.REACHCODE + ".geojson");
-        if( fs.existsSync(fn)) {
-          console.log("File exists: " + fn);
+        if(toDisk) {
+          var buf = JSON.stringify(obj);
+
+          var fn = path.join(dataPath, obj.properties.GNIS_NAME + "_" + obj.properties.PERMANENT_IDENTIFIER + "_" + obj.properties.REACHCODE + ".geojson");
+          if( fs.existsSync(fn)) {
+            console.log("File exists: " + fn);
+          }
+          var fd = fs.openSync(fn, 'w');
+          fs.writeSync(fd, buf);
+          fs.closeSync(fd);
+          if(--count <= 0) {
+            stream.resume();
+          }
+
         }
-        var fd = fs.openSync(fn, 'w');
-        fs.writeSync(fd, buf);
-        fs.closeSync(fd);
-        if(--count <= 0) {
-          stream.resume();
+
+        else {
+
+          client.index({
+              index: defaultIndex,
+              type: 'feature',
+              id: obj.properties.GNIS_ID + "_" + obj.properties.PERMANENT_IDENTIFIER,
+              body: obj
+          }, function (error, response) {
+              logResponse(error, response);
+              if(--count <= 0) {
+                  stream.resume();
+              }
+          });
         }
     };
 }
